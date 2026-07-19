@@ -78,13 +78,14 @@ try:
 except Exception as e:
     debug_log(f"FFmpeg設定中にエラー: {e}", "ERROR")
 
-# パラメータ設定
-width, height = 768, 768
-sample_rate = 16000
-cfg = 1.
-fps = 24
-context_frames = 12
-context_overlap = 3
+# デフォルトパラメータ
+DEFAULT_WIDTH = 768
+DEFAULT_HEIGHT = 768
+DEFAULT_SAMPLE_RATE = 16000
+DEFAULT_CFG = 1.0
+DEFAULT_FPS = 24
+DEFAULT_CONTEXT_FRAMES = 12
+DEFAULT_CONTEXT_OVERLAP = 3
 
 def validate_inputs(image_input, audio_input, pose_input, length):
     """入力パラメータの検証"""
@@ -199,12 +200,26 @@ def load_models(quantization_input):
         raise
 
 @error_handler
-def generate(image_input, audio_input, pose_input, width, height, length, steps, 
-             sample_rate, cfg, fps, context_frames, context_overlap, quantization_input, seed):
-    
+def generate(
+    image_input, 
+    audio_input, 
+    pose_input, 
+    width, 
+    height, 
+    length, 
+    steps, 
+    sample_rate, 
+    cfg, 
+    fps, 
+    context_frames, 
+    context_overlap, 
+    quantization_input, 
+    seed
+):
     debug_log("===== 動画生成処理を開始 =====", "INFO")
     debug_log(f"入力パラメータ: 画像={image_input}, 音声={audio_input}, ポーズ={pose_input}", "INFO")
     debug_log(f"生成パラメータ: 長さ={length}, ステップ={steps}, FPS={fps}, 量子化={quantization_input}", "INFO")
+    debug_log(f"コンテキスト: フレーム={context_frames}, オーバーラップ={context_overlap}", "INFO")
     
     # メモリクリーン
     gc.collect()
@@ -216,6 +231,7 @@ def generate(image_input, audio_input, pose_input, width, height, length, steps,
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     save_dir = Path("outputs")
     save_dir.mkdir(exist_ok=True, parents=True)
+    save_name = f"{save_dir}/{timestamp}"
     debug_log(f"出力ディレクトリ: {save_dir}", "INFO")
     
     try:
@@ -390,12 +406,51 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 with gr.Group():
                     image_input = gr.Image(label="画像入力（自動スケーリング）", type="filepath")
                     audio_input = gr.Audio(label="音声入力", type="filepath")
-                    pose_input = gr.Textbox(label="ポーズ入力（ディレクトリパス）", placeholder="ポーズデータのディレクトリパスを入力", value="assets/halfbody_demo/pose/fight")
+                    pose_input = gr.Textbox(
+                        label="ポーズ入力（ディレクトリパス）", 
+                        placeholder="ポーズデータのディレクトリパスを入力", 
+                        value="assets/halfbody_demo/pose/fight"
+                    )
                 with gr.Group():
-                    length = gr.Number(label="動画長（推奨: 120）", value=120)
-                    steps = gr.Number(label="ステップ数（デフォルト: 6）", value=6)
-                    quantization_input = gr.Checkbox(label="int8量子化（VRAM 12GBのユーザーに推奨、5秒以内の音声を使用）", value=False)
-                    seed = gr.Number(label="シード（-1はランダム）", value=-1)
+                    # スライダーと数値入力用のコンポーネント
+                    width = gr.Slider(
+                        minimum=256, maximum=1024, value=DEFAULT_WIDTH, step=64,
+                        label="幅 (width)"
+                    )
+                    height = gr.Slider(
+                        minimum=256, maximum=1024, value=DEFAULT_HEIGHT, step=64,
+                        label="高さ (height)"
+                    )
+                    length = gr.Slider(
+                        minimum=1, maximum=500, value=120, step=1,
+                        label="動画長（フレーム数）"
+                    )
+                    steps = gr.Slider(
+                        minimum=1, maximum=50, value=6, step=1,
+                        label="推論ステップ数"
+                    )
+                    sample_rate = gr.Number(
+                        value=DEFAULT_SAMPLE_RATE, label="サンプリングレート", visible=False
+                    )
+                    cfg = gr.Number(
+                        value=DEFAULT_CFG, label="CFGスケール", visible=False
+                    )
+                    fps = gr.Number(
+                        value=DEFAULT_FPS, label="FPS", visible=False
+                    )
+                    context_frames = gr.Number(
+                        value=DEFAULT_CONTEXT_FRAMES, label="コンテキストフレーム数", visible=False
+                    )
+                    context_overlap = gr.Number(
+                        value=DEFAULT_CONTEXT_OVERLAP, label="コンテキストオーバーラップ", visible=False
+                    )
+                    quantization_input = gr.Checkbox(
+                        label="int8量子化（VRAM 12GBのユーザーに推奨、5秒以内の音声を使用）", 
+                        value=False
+                    )
+                    seed = gr.Number(
+                        label="シード（-1はランダム）", value=-1
+                    )
                 generate_button = gr.Button("🎬 動画生成")
             with gr.Column():
                 video_output = gr.Video(label="出力動画")
@@ -418,6 +473,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     def generate_with_logging(*args, **kwargs):
         try:
             debug_log("Gradioからの生成リクエストを受信", "INFO")
+            debug_log(f"受信した引数の数: {len(args)}", "DEBUG")
             result = generate(*args, **kwargs)
             debug_log("生成リクエストが正常に完了", "INFO")
             return result
@@ -426,9 +482,25 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             error_msg = f"エラーが発生しました: {str(e)}"
             return None, gr.update(visible=True, value=f"エラー: {str(e)}")
     
+    # 修正: すべての入力はコンポーネント参照を使用
     generate_button.click(
         generate_with_logging,
-        inputs=[image_input, audio_input, pose_input, width, height, length, steps, sample_rate, cfg, fps, context_frames, context_overlap, quantization_input, seed],
+        inputs=[
+            image_input,      # gr.Image
+            audio_input,      # gr.Audio
+            pose_input,       # gr.Textbox
+            width,           # gr.Slider
+            height,          # gr.Slider
+            length,          # gr.Slider
+            steps,           # gr.Slider
+            sample_rate,     # gr.Number (hidden)
+            cfg,             # gr.Number (hidden)
+            fps,             # gr.Number (hidden)
+            context_frames,  # gr.Number (hidden)
+            context_overlap, # gr.Number (hidden)
+            quantization_input, # gr.Checkbox
+            seed             # gr.Number
+        ],
         outputs=[video_output, seed_text],
     )
 
