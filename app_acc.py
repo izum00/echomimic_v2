@@ -507,5 +507,5 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 if __name__ == "__main__":
     debug_log("Gradioアプリケーションを起動", "INFO")
     demo.queue()
-    demo.launch(inbrowser=True)
+    demo.launch(inbrowser=True, share=True, debug=True)
     debug_log("Gradioアプリケーションを終了", "INFO")
