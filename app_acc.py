@@ -1,5 +1,4 @@
 import os
-import datetime
 import random
 import traceback
 import sys
@@ -24,7 +23,7 @@ import gc
 
 # ログ設定
 def debug_log(msg, level="INFO"):
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     print(f"[{timestamp}] [{level}] {msg}")
     sys.stdout.flush()
 
@@ -229,7 +228,7 @@ def generate(
     debug_log("メモリクリーン完了", "INFO")
     
     # タイムスタンプと出力ディレクトリ
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     save_dir = Path("outputs")
     save_dir.mkdir(exist_ok=True, parents=True)
     save_name = f"{save_dir}/{timestamp}"
