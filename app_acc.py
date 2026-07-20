@@ -422,8 +422,10 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                         minimum=256, maximum=1024, value=DEFAULT_HEIGHT, step=64,
                         label="高さ (height)"
                     )
-                    length = gr.Slider(
-                        minimum=1, maximum=500, value=120, step=1,
+                    length = gr.Number(
+                        value=120,
+                        minimum=1,
+                        precision=0,   # 小数を禁止
                         label="動画長（フレーム数）"
                     )
                     steps = gr.Slider(
