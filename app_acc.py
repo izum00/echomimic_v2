@@ -432,19 +432,19 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                         label="推論ステップ数"
                     )
                     sample_rate = gr.Number(
-                        value=DEFAULT_SAMPLE_RATE, label="サンプリングレート", visible=False
+                        value=DEFAULT_SAMPLE_RATE, label="サンプリングレート"
                     )
                     cfg = gr.Number(
-                        value=DEFAULT_CFG, label="CFGスケール", visible=False
+                        value=DEFAULT_CFG, label="CFGスケール"
                     )
                     fps = gr.Number(
-                        value=DEFAULT_FPS, label="FPS", visible=False
+                        value=DEFAULT_FPS, label="FPS"
                     )
                     context_frames = gr.Number(
-                        value=DEFAULT_CONTEXT_FRAMES, label="コンテキストフレーム数", visible=False
+                        value=DEFAULT_CONTEXT_FRAMES, label="コンテキストフレーム数"
                     )
                     context_overlap = gr.Number(
-                        value=DEFAULT_CONTEXT_OVERLAP, label="コンテキストオーバーラップ", visible=False
+                        value=DEFAULT_CONTEXT_OVERLAP, label="コンテキストオーバーラップ"
                     )
                     quantization_input = gr.Checkbox(
                         label="int8量子化（VRAM 12GBのユーザーに推奨、5秒以内の音声を使用）", 
